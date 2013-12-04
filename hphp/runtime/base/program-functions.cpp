@@ -1686,7 +1686,7 @@ void hphp_session_exit() {
     // reinitialize g_context here.
     g_context.getCheck();
 
-    mm.sweep();
+    //mm.sweep();
 
     // Destroy g_context again because ExecutionContext has
     // SmartAllocated data members. These members cannot survive over
@@ -1694,7 +1694,7 @@ void hphp_session_exit() {
     // calling resetAllocator().
     g_context.destroy();
 
-    mm.resetAllocator();
+    //mm.resetAllocator();
 
     // Do any post-sweep cleanup necessary for global variables
     free_global_variables_after_sweep();

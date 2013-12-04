@@ -232,12 +232,8 @@ void MemoryManager::resetAllocator() {
   for (SweepNode *n = m_sweep.next, *next; n != &m_sweep; n = next) {
     next = n->next;
     free(n);
-  }
-  m_sweep.next = m_sweep.prev = &m_sweep;
+  }  m_sweep.next = m_sweep.prev = &m_sweep;
 
-  // zero out freelists
-  for (auto& i : m_freelists) i.head = nullptr;
-  m_front = m_limit = 0;
 }
 
 /*

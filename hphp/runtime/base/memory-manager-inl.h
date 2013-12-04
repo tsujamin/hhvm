@@ -114,23 +114,6 @@ struct MemoryManager::DebugHeader {
   size_t returnedCap;
   size_t padding;
 };
-
-struct MemoryManager::FreeList::Node {
-  Node* next;
-};
-
-inline void* MemoryManager::FreeList::maybePop() {
-  auto ret = head;
-  if (LIKELY(ret != nullptr)) head = ret->next;
-  return ret;
-}
-
-inline void MemoryManager::FreeList::push(void* val) {
-  auto const node = static_cast<Node*>(val);
-  node->next = head;
-  head = node;
-}
-
 //////////////////////////////////////////////////////////////////////
 
 template<class SizeT> ALWAYS_INLINE
@@ -177,13 +160,7 @@ inline void* MemoryManager::smartMallocSize(uint32_t bytes) {
   // Note: unlike smart_malloc, we don't track internal fragmentation
   // in the usage stats when we're going through smartMallocSize.
   m_stats.usage += bytes;
-
-  unsigned i = (bytes - 1) >> kLgSizeQuantum;
-  assert(i < kNumSizes);
-  void* p = m_freelists[i].maybePop();
-  if (UNLIKELY(p == nullptr)) {
-    p = slabAlloc(debugAddExtra(MemoryManager::smartSizeClass(bytes)));
-  }
+  void* const p = slabAlloc(debugAddExtra(MemoryManager::smartSizeClass(bytes)));
   assert(reinterpret_cast<uintptr_t>(p) % 16 == 0);
 
   FTRACE(1, "smartMallocSize: {} -> {}\n", bytes, p);
@@ -194,10 +171,6 @@ inline void MemoryManager::smartFreeSize(void* ptr, uint32_t bytes) {
   assert(bytes > 0);
   assert(bytes <= kMaxSmartSize);
   assert(reinterpret_cast<uintptr_t>(ptr) % 16 == 0);
-
-  unsigned i = (bytes - 1) >> kLgSizeQuantum;
-  assert(i < kNumSizes);
-  m_freelists[i].push(debugPreFree(ptr, bytes, bytes));
   m_stats.usage -= bytes;
 
   FTRACE(1, "smartFreeSize: {} ({} bytes)\n", ptr, bytes);
