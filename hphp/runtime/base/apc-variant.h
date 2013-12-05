@@ -74,12 +74,9 @@ public:
   void decRef() {
     assert(m_count.load());
     if (IS_REFCOUNTED_TYPE(m_type)) {
-      if (--m_count == 0) {
-        delete this;
-      }
+      --m_count;
     } else {
       assert(m_count.load() == 1);
-      delete this;
     }
   }
 

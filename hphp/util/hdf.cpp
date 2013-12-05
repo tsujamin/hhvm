@@ -43,7 +43,7 @@ public:
   int m_count;
 
   void inc() { m_count++;}
-  void dec() { assert(m_count > 0); if (--m_count == 0) { delete this;}}
+  void dec() { assert(m_count > 0); --m_count; }
 };
 
 Mutex HdfRaw::HdfMutex;
