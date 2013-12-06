@@ -172,7 +172,7 @@ inline void MemoryManager::smartFreeSize(void* ptr, uint32_t bytes) {
   assert(bytes <= kMaxSmartSize);
   assert(reinterpret_cast<uintptr_t>(ptr) % 16 == 0);
   m_stats.usage -= bytes;
-
+  //Dont free memory
   FTRACE(1, "smartFreeSize: {} ({} bytes)\n", ptr, bytes);
 }
 

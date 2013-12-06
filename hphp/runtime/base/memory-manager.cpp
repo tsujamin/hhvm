@@ -213,27 +213,11 @@ void MemoryManager::refreshStatsHelperStop() {
 #endif
 
 void MemoryManager::sweep() {
-  assert(!sweeping());
-  m_sweeping = true;
-  SCOPE_EXIT { m_sweeping = false; };
-  Sweepable::SweepAll();
+  //Don't sweep memory, keep allocated
 }
 
 void MemoryManager::resetAllocator() {
-  StringData::sweepAll();
-
-  // free smart-malloc slabs
-  for (auto slab : m_slabs) {
-    free(slab);
-  }
-  m_slabs.clear();
-
-  // free large allocation blocks
-  for (SweepNode *n = m_sweep.next, *next; n != &m_sweep; n = next) {
-    next = n->next;
-    free(n);
-  }  m_sweep.next = m_sweep.prev = &m_sweep;
-
+  //Dont reset allocator, keep allocating into new memory
 }
 
 /*
@@ -297,6 +281,7 @@ inline void* MemoryManager::smartMalloc(size_t nbytes) {
 }
 
 inline void MemoryManager::smartFree(void* ptr) {
+  //Will not free memory, small object will update allocation stats though
   assert(ptr != 0);
   auto const n = static_cast<SweepNode*>(ptr) - 1;
   auto const padbytes = n->padbytes;
@@ -435,11 +420,7 @@ void* MemoryManager::smartCallocBig(size_t totalbytes) {
 
 NEVER_INLINE
 void MemoryManager::smartFreeBig(SweepNode* n) {
-  SweepNode* next = n->next;
-  SweepNode* prev = n->prev;
-  next->prev = prev;
-  prev->next = next;
-  free(n);
+  //Dont Free any memory
 }
 
 // smart_malloc api entry points, with support for malloc/free corner cases.
