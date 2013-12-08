@@ -104,6 +104,11 @@ template<class T> void smart_delete_array(T* t, size_t count);
 constexpr size_t kMaxSmartSize = 2048;
 
 /*
+ * The minimum size of an allocated slab
+ */
+constexpr uint32_t SLAB_SIZE = 2 << 20;
+
+/*
  * Constants for the various debug junk-filling of different types of
  * memory in hhvm.
  *
