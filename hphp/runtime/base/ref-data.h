@@ -204,7 +204,7 @@ struct RefData {
 
   void zAddRef() {
     if (getRealCount() != 1) {
-      ++m_count;
+      //++m_count;
       return;
     }
     assert(!m_cow);
@@ -217,7 +217,7 @@ struct RefData {
   void zDelRef() {
     if (getRealCount() != 2) {
       assert(getRealCount() != 0);
-      --m_count;
+      //--m_count;
       return;
     }
     m_count = 1;

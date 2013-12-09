@@ -176,9 +176,9 @@ struct AtomicSmartPtr {
   }
 
   ~AtomicSmartPtr() {
-    if (m_px && m_px->decAtomicCount() == 0) {
-      m_px->atomicRelease();
-    }
+    // if (m_px && m_px->decAtomicCount() == 0) {
+    //   m_px->atomicRelease();
+    // }
   }
 
   /**

@@ -67,12 +67,12 @@ public:
   }
 
   void incRef() {
-    assert(IS_REFCOUNTED_TYPE(m_type));
-    ++m_count;
+    /*assert(IS_REFCOUNTED_TYPE(m_type));
+    ++m_count;*/
   }
 
   void decRef() {
-    assert(m_count.load());
+   /* assert(m_count.load());
     if (IS_REFCOUNTED_TYPE(m_type)) {
       if (--m_count == 0) {
         delete this;
@@ -80,7 +80,7 @@ public:
     } else {
       assert(m_count.load() == 1);
       delete this;
-    }
+    }*/
   }
 
   Variant toLocal();

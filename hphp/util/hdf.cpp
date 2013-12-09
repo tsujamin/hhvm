@@ -42,8 +42,8 @@ public:
   HDF *m_hdf;
   int m_count;
 
-  void inc() { m_count++;}
-  void dec() { assert(m_count > 0); if (--m_count == 0) { delete this;}}
+  void inc() { /*m_count++;*/}
+  void dec() { /*assert(m_count > 0); if (--m_count == 0) { delete this;}*/}
 };
 
 Mutex HdfRaw::HdfMutex;

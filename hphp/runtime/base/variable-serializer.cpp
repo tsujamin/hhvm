@@ -1063,7 +1063,7 @@ bool VariableSerializer::incNestedLevel(void *ptr,
   case Type::DebugDump:
   case Type::JSON:
   case Type::DebuggerDump:
-    return ++m_counts[ptr] >= m_maxCount;
+    return /*++*/m_counts[ptr] >= m_maxCount;
   case Type::DebuggerSerialize:
     if (m_maxLevelDebugger > 0 && ++m_levelDebugger > m_maxLevelDebugger) {
       return true;
@@ -1073,7 +1073,7 @@ bool VariableSerializer::incNestedLevel(void *ptr,
   case Type::APCSerialize:
     {
       assert(m_arrayIds);
-      int ct = ++m_counts[ptr];
+      int ct = /*++*/m_counts[ptr];
       if (m_arrayIds->find(ptr) != m_arrayIds->end() &&
           (m_referenced || isObject)) {
         return true;
@@ -1091,7 +1091,7 @@ bool VariableSerializer::incNestedLevel(void *ptr,
 }
 
 void VariableSerializer::decNestedLevel(void *ptr) {
-  --m_counts[ptr];
+  //--m_counts[ptr];
   if (m_type == Type::DebuggerSerialize && m_maxLevelDebugger > 0) {
     --m_levelDebugger;
   }

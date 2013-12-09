@@ -82,7 +82,7 @@ protected:
   virtual void sendImpl(DebuggerThriftBuffer &thrift);
   virtual void recvImpl(DebuggerThriftBuffer &thrift);
 
-  int decCount() { assert(m_count > 0); return --m_count;}
+  int decCount() { assert(m_count > 0); return /*--*/m_count;}
   int getCount() const { assert(m_count > 0); return m_count;}
   void installLocationFilterForLine(InterruptSite *site);
   void removeLocationFilter();

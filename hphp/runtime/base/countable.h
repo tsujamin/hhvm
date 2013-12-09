@@ -78,13 +78,6 @@ inline void assert_refcount_realistic_ns_nz(int32_t count) {
 }
 
 #define DECREF_AND_RELEASE_MAYBE_STATIC(thiz, action) do {              \
-    assert(!MemoryManager::sweeping());                                 \
-    assert_refcount_realistic_nz(thiz->m_count);                        \
-    if (thiz->m_count == 1) {                                           \
-      action;                                                           \
-    } else if (thiz->m_count > 1) {                                     \
-      --thiz->m_count;                                                  \
-    }                                                                   \
   } while (false)
 
 /**
@@ -108,15 +101,9 @@ inline void assert_refcount_realistic_ns_nz(int32_t count) {
   }                                                                     \
                                                                         \
   void incRefCount() const {                                            \
-    assert(!MemoryManager::sweeping());                                 \
-    assert_refcount_realistic(m_count);                                 \
-    if (isRefCounted()) { ++m_count; }                                  \
   }                                                                     \
                                                                         \
   RefCount decRefCount() const {                                        \
-    assert(!MemoryManager::sweeping());                                 \
-    assert_refcount_realistic_nz(m_count);                              \
-    return isRefCounted() ? --m_count : m_count;                        \
   }                                                                     \
                                                                         \
   ALWAYS_INLINE void decRefAndRelease() {                               \
@@ -147,25 +134,12 @@ inline void assert_refcount_realistic_ns_nz(int32_t count) {
   }                                                     \
                                                         \
   void incRefCount() const {                            \
-    assert(!MemoryManager::sweeping());                 \
-    assert_refcount_realistic_ns(m_count);              \
-    ++m_count;                                          \
   }                                                     \
                                                         \
   RefCount decRefCount() const {                        \
-    assert(!MemoryManager::sweeping());                 \
-    assert_refcount_realistic_ns_nz(m_count);           \
-    return --m_count;                                   \
   }                                                     \
                                                         \
   ALWAYS_INLINE bool decRefAndRelease() {               \
-    assert(!MemoryManager::sweeping());                 \
-    assert_refcount_realistic_ns_nz(m_count);           \
-    if (!--m_count) {                                   \
-      release();                                        \
-      return true;                                      \
-    }                                                   \
-    return false;                                       \
   }
 
 class ObjectData;
@@ -187,10 +161,10 @@ private:
  */
 class AtomicCountable {
  public:
-  AtomicCountable() : m_count(0) {}
+  AtomicCountable() : m_count(2) {}
   RefCount getCount() const { return m_count; }
-  void incAtomicCount() const { ++m_count; }
-  RefCount decAtomicCount() const { return --m_count; }
+  void incAtomicCount() const { /*++m_count;*/ }
+  RefCount decAtomicCount() const { return /*--*/m_count; }
  protected:
   mutable std::atomic<RefCount> m_count;
 };

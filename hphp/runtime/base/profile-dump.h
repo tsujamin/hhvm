@@ -37,23 +37,23 @@ struct SiteAllocations {
 
   // operators for merging shorthand
   SiteAllocations &operator+=(size_t bytes) {
-    m_count++;
+    //m_count++;
     m_bytes += bytes;
     return *this;
   }
   SiteAllocations &operator-=(size_t bytes) {
-    m_count--;
+    //m_count--;
     m_bytes -= bytes;
     return *this;
   }
 
   SiteAllocations &operator+=(const SiteAllocations &allocs) {
-    m_count += allocs.m_count;
+    //m_count += allocs.m_count;
     m_bytes += allocs.m_bytes;
     return *this;
   }
   SiteAllocations &operator-=(const SiteAllocations &allocs) {
-    m_count -= allocs.m_count;
+    //m_count -= allocs.m_count;
     m_bytes -= allocs.m_bytes;
     return *this;
   }
