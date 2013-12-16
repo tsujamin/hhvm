@@ -195,30 +195,14 @@ struct AtomicSmartPtr {
   }
 
   AtomicSmartPtr& operator=(T* px) {
-    if (m_px != px) {
-      if (m_px && m_px->decAtomicCount() == 0) {
-        m_px->atomicRelease();
-      }
-      m_px = px;
-      if (m_px) {
-        m_px->incAtomicCount();
-      }
-    }
+    if (m_px != px) m_px = px;
     return *this;
   }
 
   template<class Y>
   AtomicSmartPtr& operator=(Y* px) {
     T* npx = dynamic_cast<T*>(px);
-    if (m_px != npx) {
-      if (m_px && m_px->decAtomicCount() == 0) {
-        m_px->atomicRelease();
-      }
-      m_px = npx;
-      if (m_px) {
-        m_px->incAtomicCount();
-      }
-    }
+    if (m_px != npx) m_px = npx;
     return *this;
   }
 

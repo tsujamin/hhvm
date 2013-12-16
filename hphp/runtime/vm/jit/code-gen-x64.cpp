@@ -1223,8 +1223,8 @@ bool CodeGenerator::emitIncDecHelper(SSATmp* dst, SSATmp* src1, SSATmp* src2,
       src1->isA(Type::Int) &&
       // src2 == 1:
       src2->isConst() && src2->isA(Type::Int) && src2->getValInt() == 1) {
-    emitMovRegReg(m_as, curOpd(src1).reg(), curOpd(dst).reg());
-    (m_as.*emitFunc)(curOpd(dst).reg());
+    // emitMovRegReg(m_as, curOpd(src1).reg(), curOpd(dst).reg());
+    // (m_as.*emitFunc)(curOpd(dst).reg());
     return true;
   }
   return false;
