@@ -3246,7 +3246,7 @@ Address CodeGenerator::cgCheckStaticBitAndDecRef(Type type,
   if (!exit && !type.needsStaticBitCheck() &&
       (RuntimeOption::EvalDecRefUsePlainDeclWithDestroy ||
        (RuntimeOption::EvalDecRefUsePlainDecl && !hasDestroy))) {
-    m_as.decl(dataReg[FAST_REFCOUNT_OFFSET]);
+    //m_as.decl(dataReg[FAST_REFCOUNT_OFFSET]);
     if (RuntimeOption::EvalHHIRGenerateAsserts) {
       // Assert that the ref count is not less than zero
       emitAssertFlagsNonNegative(m_as);
@@ -3272,12 +3272,12 @@ Address CodeGenerator::cgCheckStaticBitAndDecRef(Type type,
     }
 
     // Decrement _count
-    if (canUseScratch) {
-      as.decl(scratchReg);
-      as.storel(scratchReg, dataReg[FAST_REFCOUNT_OFFSET]);
-    } else {
-      as.decl(dataReg[FAST_REFCOUNT_OFFSET]);
-    }
+    // if (canUseScratch) {
+    //   as.decl(scratchReg);
+    //   as.storel(scratchReg, dataReg[FAST_REFCOUNT_OFFSET]);
+    // } else {
+    //   as.decl(dataReg[FAST_REFCOUNT_OFFSET]);
+    // }
 
     if (RuntimeOption::EvalHHIRGenerateAsserts) {
       // Assert that the ref count is not less than zero
@@ -3298,7 +3298,7 @@ Address CodeGenerator::cgCheckStaticBitAndDecRef(Type type,
     if (exit) {
       emitFwdJcc(CC_E, exit);
     } else {
-      unlikelyIfThenElse(CC_E, destroy, static_check_and_decl);
+      unlikelyIfThenElse(CC_E, [](Asm&){}, static_check_and_decl);
       return addrToPatch;
     }
   } else if (type.needsStaticBitCheck()) {
@@ -4283,7 +4283,7 @@ void CodeGenerator::cgStaticLocInitCached(IRInstruction* inst) {
   // to inc ref it because it's a bytecode invariant that it's not a
   // reference counted type.
   cgStore(rdSrc[RefData::tvOffset()], inst->src(1));
-  a.    incl   (rdSrc[FAST_REFCOUNT_OFFSET]);
+ // a.    incl   (rdSrc[FAST_REFCOUNT_OFFSET]);
   if (debug) {
     static_assert(sizeof(RefData::Magic::kMagic) == sizeof(uint64_t), "");
     a.  storeq (static_cast<int64_t>(RefData::Magic::kMagic),

@@ -244,7 +244,7 @@ asm_label(a, release);
   a.    cmpl   (1, rData[FAST_REFCOUNT_OFFSET]);
   jccBlock<CC_L>(a, [&] {
     a.  jz8    (doRelease);
-    a.  decl   (rData[FAST_REFCOUNT_OFFSET]);
+    //a.  decl   (rData[FAST_REFCOUNT_OFFSET]);
   });
   a.    ret    ();
 asm_label(a, doRelease);

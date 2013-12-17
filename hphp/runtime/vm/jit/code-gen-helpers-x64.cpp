@@ -187,7 +187,7 @@ void emitIncRef(Asm& as, PhysReg base) {
     emitAssertRefCount(as, base);
   }
   // emit incref
-  as.incl(base[FAST_REFCOUNT_OFFSET]);
+  //as.incl(base[FAST_REFCOUNT_OFFSET]);
   if (RuntimeOption::EvalHHIRGenerateAsserts) {
     // Assert that the ref count is greater than zero
     emitAssertFlagsNonNegative(as);
@@ -208,7 +208,7 @@ void emitIncRefGenericRegSafe(Asm& as, PhysReg base, int disp, PhysReg tmpReg) {
                                 tmpReg);
     { // if !static
       IfCountNotStatic ins(as, tmpReg);
-      as. incl(tmpReg[FAST_REFCOUNT_OFFSET]);
+      //as. incl(tmpReg[FAST_REFCOUNT_OFFSET]);
     } // endif
   } // endif
 }

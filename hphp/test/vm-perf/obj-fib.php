@@ -10,6 +10,6 @@ class FibberFactoryFacade {
 }
 
 $fibber = new FibberFactoryFacade();
-for ($i = 0; $i < 35; $i++) {
+for ($i = 0; $i < 3; $i++) {
   echo $fibber->f($i) . "\n";
 }
