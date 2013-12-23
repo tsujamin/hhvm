@@ -114,23 +114,6 @@ struct MemoryManager::DebugHeader {
   size_t returnedCap;
   size_t padding;
 };
-
-struct MemoryManager::FreeList::Node {
-  Node* next;
-};
-
-inline void* MemoryManager::FreeList::maybePop() {
-  auto ret = head;
-  if (LIKELY(ret != nullptr)) head = ret->next;
-  return ret;
-}
-
-inline void MemoryManager::FreeList::push(void* val) {
-  auto const node = static_cast<Node*>(val);
-  node->next = head;
-  head = node;
-}
-
 //////////////////////////////////////////////////////////////////////
 
 template<class SizeT> ALWAYS_INLINE
@@ -166,81 +149,46 @@ inline uint32_t MemoryManager::smartSizeClass(uint32_t reqBytes) {
   return ret;
 }
 
+
 inline bool MemoryManager::sweeping() {
   return !TlsWrapper::isNull() && MM().m_sweeping;
 }
 
 inline void* MemoryManager::smartMallocSize(uint32_t bytes) {
   assert(bytes > 0);
-  assert(bytes <= kMaxSmartSize);
+  bytes = bytes % 16 ?  bytes + 16 - bytes%16 : bytes ;
 
   // Note: unlike smart_malloc, we don't track internal fragmentation
   // in the usage stats when we're going through smartMallocSize.
   m_stats.usage += bytes;
-
-  unsigned i = (bytes - 1) >> kLgSizeQuantum;
-  assert(i < kNumSizes);
-  void* p = m_freelists[i].maybePop();
-  if (UNLIKELY(p == nullptr)) {
-    p = slabAlloc(debugAddExtra(MemoryManager::smartSizeClass(bytes)));
-  }
+  void* const p = slabAlloc(debugAddExtra(bytes));
   assert(reinterpret_cast<uintptr_t>(p) % 16 == 0);
-
+  if (UNLIKELY((m_slabs.back() - m_limit) > SLAB_SIZE)) {
+    assert(bytes > SLAB_SIZE);
+  }
   FTRACE(1, "smartMallocSize: {} -> {}\n", bytes, p);
   return debugPostAllocate(p, bytes, bytes);
 }
 
 inline void MemoryManager::smartFreeSize(void* ptr, uint32_t bytes) {
   assert(bytes > 0);
-  assert(bytes <= kMaxSmartSize);
   assert(reinterpret_cast<uintptr_t>(ptr) % 16 == 0);
-
-  unsigned i = (bytes - 1) >> kLgSizeQuantum;
-  assert(i < kNumSizes);
-  m_freelists[i].push(debugPreFree(ptr, bytes, bytes));
   m_stats.usage -= bytes;
-
+  //Dont free memory
   FTRACE(1, "smartFreeSize: {} ({} bytes)\n", ptr, bytes);
 }
 
-ALWAYS_INLINE
-std::pair<void*,size_t> MemoryManager::smartMallocSizeBig(size_t bytes) {
-#ifdef USE_JEMALLOC
-  void* ptr;
-  size_t sz;
-  auto const retptr = smartMallocSizeBigHelper(ptr, sz, bytes);
-  FTRACE(1, "smartMallocBig: {} ({} requested, {} usable)\n",
-         retptr, bytes, sz);
-  return std::make_pair(retptr, sz);
-#else
-  m_stats.usage += bytes;
-  // TODO(#2831116): we only add sizeof(SmallNode) so smartMallocBig
-  // can subtract it.
-  auto const ret = smartMallocBig(debugAddExtra(bytes + sizeof(SmallNode)));
-  FTRACE(1, "smartMallocBig: {} ({} bytes)\n", ret, bytes);
-  return std::make_pair(debugPostAllocate(ret, bytes, bytes), bytes);
-#endif
-}
-
-ALWAYS_INLINE
-void MemoryManager::smartFreeSizeBig(void* vp, size_t bytes) {
-  m_stats.usage -= bytes;
-  FTRACE(1, "smartFreeBig: {} ({} bytes)\n", vp, bytes);
-  return smartFreeBig(static_cast<SweepNode*>(debugPreFree(vp, bytes, 0)) - 1);
-}
 
 //////////////////////////////////////////////////////////////////////
 
 ALWAYS_INLINE
 void* MemoryManager::objMalloc(size_t size) {
-  if (LIKELY(size <= kMaxSmartSize)) return smartMallocSize(size);
-  return smartMallocSizeBig(size).first;
+  return smartMallocSize(size);
 }
 
 ALWAYS_INLINE
 void MemoryManager::objFree(void* vp, size_t size) {
-  if (LIKELY(size <= kMaxSmartSize)) return smartFreeSize(vp, size);
-  return smartFreeSizeBig(vp, size);
+  return smartFreeSize(vp, size);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -260,15 +208,12 @@ void MemoryManager::smartFreeSizeLogged(void* p, uint32_t size) {
 
 ALWAYS_INLINE
 std::pair<void*,size_t> MemoryManager::smartMallocSizeBigLogged(size_t size) {
-  auto const retptr = smartMallocSizeBig(size);
-  if (memory_profiling) { logAllocation(retptr.first, size); }
-  return retptr;
+  return std::make_pair(smartMallocSizeLogged(size), debugAddExtra(size));
 }
 
 ALWAYS_INLINE
 void MemoryManager::smartFreeSizeBigLogged(void* vp, size_t size) {
-  if (memory_profiling) { logDeallocation(vp); }
-  return smartFreeSizeBig(vp, size);
+  return smartFreeSizeLogged(vp, size);
 }
 
 ALWAYS_INLINE

@@ -42,10 +42,6 @@ TRACE_SET_MOD(smartalloc);
 
 //////////////////////////////////////////////////////////////////////
 
-const uint32_t SLAB_SIZE = 2 << 20;
-
-//////////////////////////////////////////////////////////////////////
-
 #ifdef USE_JEMALLOC
 bool MemoryManager::s_statsEnabled = false;
 size_t MemoryManager::s_cactiveLimitCeiling = 0;
@@ -213,31 +209,11 @@ void MemoryManager::refreshStatsHelperStop() {
 #endif
 
 void MemoryManager::sweep() {
-  assert(!sweeping());
-  m_sweeping = true;
-  SCOPE_EXIT { m_sweeping = false; };
-  Sweepable::SweepAll();
+  //Don't sweep memory, keep allocated
 }
 
 void MemoryManager::resetAllocator() {
-  StringData::sweepAll();
-
-  // free smart-malloc slabs
-  for (auto slab : m_slabs) {
-    free(slab);
-  }
-  m_slabs.clear();
-
-  // free large allocation blocks
-  for (SweepNode *n = m_sweep.next, *next; n != &m_sweep; n = next) {
-    next = n->next;
-    free(n);
-  }
-  m_sweep.next = m_sweep.prev = &m_sweep;
-
-  // zero out freelists
-  for (auto& i : m_freelists) i.head = nullptr;
-  m_front = m_limit = 0;
+  //Dont reset allocator, keep allocating into new memory
 }
 
 /*
@@ -291,23 +267,17 @@ void MemoryManager::resetAllocator() {
 
 inline void* MemoryManager::smartMalloc(size_t nbytes) {
   nbytes += sizeof(SmallNode);
-  if (UNLIKELY(nbytes > kMaxSmartSize)) {
-    return smartMallocBig(nbytes);
-  }
-
   auto const ptr = static_cast<SmallNode*>(smartMallocSize(nbytes));
   ptr->padbytes = nbytes;
   return ptr + 1;
 }
 
 inline void MemoryManager::smartFree(void* ptr) {
+  //Will not free memory, small object will update allocation stats though
   assert(ptr != 0);
   auto const n = static_cast<SweepNode*>(ptr) - 1;
   auto const padbytes = n->padbytes;
-  if (LIKELY(padbytes <= kMaxSmartSize)) {
-    return smartFreeSize(static_cast<SmallNode*>(ptr) - 1, n->padbytes);
-  }
-  smartFreeBig(n);
+  return smartFreeSize(static_cast<SmallNode*>(ptr) - 1, n->padbytes);
 }
 
 inline void* MemoryManager::smartRealloc(void* inputPtr, size_t nbytes) {
@@ -317,32 +287,14 @@ inline void* MemoryManager::smartRealloc(void* inputPtr, size_t nbytes) {
   void* ptr = debug ? static_cast<DebugHeader*>(inputPtr) - 1 : inputPtr;
 
   auto const n = static_cast<SweepNode*>(ptr) - 1;
-  if (LIKELY(n->padbytes <= kMaxSmartSize)) {
-    void* newmem = smart_malloc(nbytes);
-    auto const copySize = std::min(
-      n->padbytes - sizeof(SmallNode) - (debug ? sizeof(DebugHeader) : 0),
-      nbytes
-    );
-    newmem = memcpy(newmem, inputPtr, copySize);
-    smart_free(inputPtr);
-    return newmem;
-  }
-
-  // Ok, it's a big allocation.  Since we don't know how big it is
-  // (i.e. how much data we should memcpy), we have no choice but to
-  // ask malloc to realloc for us.
-  auto const oldNext = n->next;
-  auto const oldPrev = n->prev;
-
-  auto const newNode = static_cast<SweepNode*>(
-    realloc(n, debugAddExtra(nbytes + sizeof(SweepNode)))
+  void* newmem = smart_malloc(nbytes);
+  auto const copySize = std::min(
+    n->padbytes - sizeof(SmallNode) - (debug ? sizeof(DebugHeader) : 0),
+    nbytes
   );
-
-  refreshStatsHelper();
-  if (newNode != n) {
-    oldNext->prev = oldPrev->next = newNode;
-  }
-  return debugPostAllocate(newNode + 1, 0, 0);
+  newmem = memcpy(newmem, inputPtr, copySize);
+  smart_free(inputPtr);
+  return newmem;
 }
 
 /*
@@ -353,16 +305,18 @@ NEVER_INLINE char* MemoryManager::newSlab(size_t nbytes) {
   if (UNLIKELY(m_stats.usage > m_stats.maxBytes)) {
     refreshStatsHelper();
   }
-  char* slab = (char*) Util::safe_malloc(SLAB_SIZE);
+  int32_t no_slabs = SLAB_SIZE >= nbytes ? 1 : (nbytes/SLAB_SIZE + 1);
+  char* slab = (char*) Util::safe_malloc(SLAB_SIZE*no_slabs);
+
   assert(uintptr_t(slab) % 16 == 0);
-  JEMALLOC_STATS_ADJUST(&m_stats, SLAB_SIZE);
-  m_stats.alloc += SLAB_SIZE;
+  JEMALLOC_STATS_ADJUST(&m_stats, SLAB_SIZE*no_slabs);
+  m_stats.alloc += SLAB_SIZE*no_slabs;
   if (m_stats.alloc > m_stats.peakAlloc) {
     m_stats.peakAlloc = m_stats.alloc;
   }
   m_slabs.push_back(slab);
   m_front = slab + nbytes;
-  m_limit = slab + SLAB_SIZE;
+  m_limit = slab + SLAB_SIZE*no_slabs;
   FTRACE(1, "newSlab: adding slab at {} to limit {}\n",
          static_cast<void*>(slab),
          static_cast<void*>(m_limit));
@@ -404,46 +358,12 @@ inline void* MemoryManager::smartEnlist(SweepNode* n) {
 }
 
 NEVER_INLINE
-void* MemoryManager::smartMallocBig(size_t nbytes) {
-  assert(nbytes > 0);
-  auto const n = static_cast<SweepNode*>(
-    Util::safe_malloc(nbytes + sizeof(SweepNode) - sizeof(SmallNode))
-  );
-  return smartEnlist(n);
-}
-
-#ifdef USE_JEMALLOC
-NEVER_INLINE
-void* MemoryManager::smartMallocSizeBigHelper(void*& ptr,
-                                              size_t& szOut,
-                                              size_t bytes) {
-  m_stats.usage += bytes;
-  allocm(&ptr, &szOut, debugAddExtra(bytes + sizeof(SweepNode)), 0);
-  szOut = debugRemoveExtra(szOut - sizeof(SweepNode));
-  return debugPostAllocate(
-    smartEnlist(static_cast<SweepNode*>(ptr)),
-    bytes,
-    szOut
-  );
-}
-#endif
-
-NEVER_INLINE
 void* MemoryManager::smartCallocBig(size_t totalbytes) {
   assert(totalbytes > 0);
   auto const n = static_cast<SweepNode*>(
     Util::safe_calloc(totalbytes + sizeof(SweepNode), 1)
   );
   return smartEnlist(n);
-}
-
-NEVER_INLINE
-void MemoryManager::smartFreeBig(SweepNode* n) {
-  SweepNode* next = n->next;
-  SweepNode* prev = n->prev;
-  next->prev = prev;
-  prev->next = next;
-  free(n);
 }
 
 // smart_malloc api entry points, with support for malloc/free corner cases.
