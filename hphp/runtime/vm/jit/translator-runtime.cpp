@@ -467,7 +467,7 @@ void tv_release_generic(TypedValue* tv) {
   assert(tv->m_type == KindOfString || tv->m_type == KindOfArray ||
          tv->m_type == KindOfObject || tv->m_type == KindOfResource ||
          tv->m_type == KindOfRef);
-  g_destructors[typeToDestrIndex(tv->m_type)](tv->m_data.pref);
+  //g_destructors[typeToDestrIndex(tv->m_type)](tv->m_data.pref);
 }
 
 void tv_release_typed(RefData* pv, DataType dt) {
@@ -475,7 +475,7 @@ void tv_release_typed(RefData* pv, DataType dt) {
   assert(dt == KindOfString || dt == KindOfArray ||
          dt == KindOfObject || dt == KindOfResource ||
          dt == KindOfRef);
-  g_destructors[typeToDestrIndex(dt)](pv);
+  //g_destructors[typeToDestrIndex(dt)](pv);
 }
 
 Cell lookupCnsHelper(const TypedValue* tv,

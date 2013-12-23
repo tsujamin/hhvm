@@ -248,7 +248,7 @@ asm_label(a, release);
   });
   a.    ret    ();
 asm_label(a, doRelease);
-  jumpDestructor(a, PhysReg(rType), rax);
+  //jumpDestructor(a, PhysReg(rType), rax);
 
   moveToAlign(tx64->mainCode, kJmpTargetAlign);
   uniqueStubs.freeManyLocalsHelper = a.frontier();
@@ -261,7 +261,7 @@ asm_label(a, doRelease);
     emitLoadTVType(a, rIter[TVOFF(m_type)], rType);
     emitCmpTVType(a, KindOfRefCountThreshold, rType);
     a.  jle8   (skipDecRef);
-    a.  call   (release);
+    //a.  call   (release);
     tx64->fixupMap().recordIndirectFixup(a.frontier(), 0);
   asm_label(a, skipDecRef);
   };

@@ -128,10 +128,10 @@ void optimize(IRUnit& unit, TraceBuilder& traceBuilder) {
     if (changed) finishPass("guard relaxation");
   }
 
-  if (RuntimeOption::EvalHHIRRefcountOpts) {
-    optimizeRefcounts(unit);
-    finishPass("refcount opts");
-  }
+  // if (RuntimeOption::EvalHHIRRefcountOpts) {
+  //   optimizeRefcounts(unit);
+  //   finishPass("refcount opts");
+  // }
 
   dce("initial");
 

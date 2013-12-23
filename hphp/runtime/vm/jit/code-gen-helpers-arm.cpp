@@ -112,10 +112,10 @@ void emitTransCounterInc(vixl::MacroAssembler& a) {
   // // TODO(#3057328): this is not thread-safe. This should be a "load-exclusive,
   // // increment, store-exclusive, loop" sequence, but vixl doesn't yet support
   // // the exclusive-access instructions.
-  // a.   Mov   (rAsm, tx64->getTransCounterAddr());
-  // a.   Ldr   (rAsm2, rAsm[0]);
-  // a.   Add   (rAsm2, rAsm2, 1);
-  // a.   Str   (rAsm2, rAsm[0]);
+  a.   Mov   (rAsm, tx64->getTransCounterAddr());
+  a.   Ldr   (rAsm2, rAsm[0]);
+  a.   Add   (rAsm2, rAsm2, 1);
+  a.   Str   (rAsm2, rAsm[0]);
 }
 
 //////////////////////////////////////////////////////////////////////
