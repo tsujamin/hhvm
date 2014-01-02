@@ -209,7 +209,10 @@ void MemoryManager::refreshStatsHelperStop() {
 #endif
 
 void MemoryManager::sweep() {
-  //Don't sweep memory, keep allocated
+  assert(!sweeping());
+  m_sweeping = true;
+  SCOPE_EXIT { m_sweeping = false; };
+  Sweepable::SweepAll();
 }
 
 void MemoryManager::resetAllocator() {
