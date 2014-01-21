@@ -75,6 +75,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Release")
 	message("Generating Release build")
 else()
 	add_definitions(-DDEBUG)
+	add_definitions(-DNDEBUG)
 	message("Generating DEBUG build")
 endif()
 
